@@ -68,7 +68,7 @@ public class CassandraJdbcDriver implements Driver {
                     throw new SQLException(e.getMessage(), e);
                 }
                 boolean returnNullStringsFromIntroQuery = Boolean.parseBoolean(info.getProperty(RETURN_NULL_STRINGS_FROM_INTRO_QUERY_KEY));
-                return new CassandraConnection(session, this, returnNullStringsFromIntroQuery);
+                return new CassandraConnection(session, this, returnNullStringsFromIntroQuery, clientURI.getConsistencyLevel());
             } catch (UnknownHostException e) {
                 throw new SQLException(e.getMessage(), e);
             }

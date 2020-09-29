@@ -1,8 +1,6 @@
 package com.dbschema;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.RemoteEndpointAwareJdkSSLOptions;
-import com.datastax.driver.core.SSLOptions;
+import com.datastax.driver.core.*;
 import com.google.common.base.Strings;
 
 import java.net.InetAddress;
@@ -12,6 +10,7 @@ import java.security.KeyStore;
 import java.util.*;
 import java.util.logging.Logger;
 
+import static com.datastax.driver.core.QueryOptions.DEFAULT_CONSISTENCY_LEVEL;
 import static com.dbschema.DriverPropertyInfoHelper.*;
 import static com.dbschema.SSLUtil.getTrustEverybodySSLContext;
 
@@ -29,6 +28,7 @@ public class CassandraClientURI {
     private final String password;
     private final boolean sslEnabled;
     private final boolean verifyServerCert;
+    private final ConsistencyLevel consistencyLevel;
 
     public CassandraClientURI(String uri, Properties info) {
         this.uri = uri;
@@ -68,6 +68,15 @@ public class CassandraClientURI {
         this.sslEnabled = isTrue(sslEnabledOption);
         String verifyServerCertOption = getOption(info, options, VERIFY_SERVER_CERTIFICATE, VERIFY_SERVER_CERTIFICATE_DEFAULT);
         this.verifyServerCert = isTrue(verifyServerCertOption);
+        String consistencyLevelOption = getOption(info, options, CONSISTENCY_LEVEL, CONSISTENCY_LEVEL_DEFAULT);
+        ConsistencyLevel consistencyLevel;
+        try {
+            consistencyLevel = ConsistencyLevel.valueOf(consistencyLevelOption.toUpperCase(Locale.ENGLISH));
+        }
+        catch (IllegalArgumentException ignored) {
+            consistencyLevel = DEFAULT_CONSISTENCY_LEVEL;
+        }
+        this.consistencyLevel = consistencyLevel;
 
 
         { // userName,password,hosts
@@ -154,7 +163,7 @@ public class CassandraClientURI {
 
     private String getLastValue(final Map<String, List<String>> optionsMap, final String key) {
         if (optionsMap == null) return null;
-        List<String> valueList = optionsMap.get(key);
+        List<String> valueList = optionsMap.get(key.toLowerCase(Locale.ENGLISH));
         if (valueList == null || valueList.size() == 0) return null;
         return valueList.get(valueList.size() - 1);
     }
@@ -247,9 +256,12 @@ public class CassandraClientURI {
     }
 
 
-
     @Override
     public String toString() {
         return uri;
+    }
+
+    public ConsistencyLevel getConsistencyLevel() {
+        return consistencyLevel;
     }
 }

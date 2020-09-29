@@ -1,5 +1,6 @@
 package com.dbschema;
 
+import com.datastax.driver.core.ConsistencyLevel;
 import org.junit.Test;
 
 import java.util.List;
@@ -79,8 +80,30 @@ public class CassandraClientURITest {
     public void testNullSslEnabledOptionFalse() {
         Properties properties = new Properties();
         CassandraClientURI uri = new CassandraClientURI(
-                "jdbc:cassandra://localhost:9042/?name=cassandra&password=cassandra",
-                properties);
+            "jdbc:cassandra://localhost:9042/?name=cassandra&password=cassandra",
+            properties);
         assertFalse(uri.getSslEnabled());
+    }
+
+    @Test
+    public void testConsistencyLevel() {
+        Properties properties = new Properties();
+        CassandraClientURI uri = new CassandraClientURI("jdbc:cassandra://localhost:9042/?consistencyLevel=serial", properties);
+        assertEquals(ConsistencyLevel.SERIAL, uri.getConsistencyLevel());
+    }
+
+    @Test
+    public void testUnknownConsistencyLevel() {
+        Properties properties = new Properties();
+        CassandraClientURI uri = new CassandraClientURI("jdbc:cassandra://localhost:9042/?consistencyLevel=unknown", properties);
+        assertEquals(ConsistencyLevel.LOCAL_ONE, uri.getConsistencyLevel());
+    }
+
+    @Test
+    public void testConsistencyLevelInProperties() {
+        Properties properties = new Properties();
+        properties.put("consistencyLevel", "EACH_QUORUM");
+        CassandraClientURI uri = new CassandraClientURI("jdbc:cassandra://localhost:9042/?", properties);
+        assertEquals(ConsistencyLevel.EACH_QUORUM, uri.getConsistencyLevel());
     }
 }

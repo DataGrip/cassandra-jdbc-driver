@@ -21,6 +21,7 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.Session;
 
 public class CassandraConnection implements Connection {
@@ -38,15 +39,17 @@ public class CassandraConnection implements Connection {
     private static final String SELECT_COLUMNS_INTRO_QUERY = "SELECT column_name as name,\n       validator,\n       columnfamily_name as table_name,\n       type,\n       index_name,\n       index_options,\n       index_type,\n       component_index as position\nFROM system.schema_columns\nWHERE keyspace_name = ?";
 
     private final Session session;
-    private CassandraJdbcDriver driver;
-    private boolean returnNullStringsFromIntroQuery;
+    private final CassandraJdbcDriver driver;
+    private final boolean returnNullStringsFromIntroQuery;
     private boolean isClosed = false;
     private boolean isReadOnly = false;
+    private ConsistencyLevel consistencyLevel;
 
-    CassandraConnection(Session session, CassandraJdbcDriver cassandraJdbcDriver, boolean returnNullStringsFromIntroQuery) {
+    CassandraConnection(Session session, CassandraJdbcDriver cassandraJdbcDriver, boolean returnNullStringsFromIntroQuery, ConsistencyLevel consistencyLevel) {
         this.session = session;
         driver = cassandraJdbcDriver;
         this.returnNullStringsFromIntroQuery = returnNullStringsFromIntroQuery;
+        this.consistencyLevel = consistencyLevel;
     }
 
     public String getCatalog() throws SQLException {
@@ -79,7 +82,7 @@ public class CassandraConnection implements Connection {
     public Statement createStatement() throws SQLException {
         checkClosed();
         try {
-            return new CassandraStatement(session);
+            return new CassandraStatement(session, consistencyLevel);
         } catch (Throwable t) {
             throw new SQLException(t.getMessage(), t);
         }
@@ -99,7 +102,9 @@ public class CassandraConnection implements Connection {
     public PreparedStatement prepareStatement(String sql) throws SQLException {
         checkClosed();
         try {
-            return new CassandraPreparedStatement(session, session.prepare(sql), returnNullStringsFromIntroQuery || !SELECT_COLUMNS_INTRO_QUERY.equals(sql));
+            com.datastax.driver.core.PreparedStatement statement = session.prepare(sql);
+            statement.setConsistencyLevel(consistencyLevel);
+            return new CassandraPreparedStatement(session, statement, returnNullStringsFromIntroQuery || !SELECT_COLUMNS_INTRO_QUERY.equals(sql));
         } catch (Throwable t) {
             throw new SQLException(t.getMessage(), t);
         }

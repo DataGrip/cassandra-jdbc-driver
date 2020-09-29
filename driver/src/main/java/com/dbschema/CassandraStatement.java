@@ -1,8 +1,6 @@
 package com.dbschema;
 
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.SyntaxError;
 
 import java.sql.ResultSet;
@@ -11,17 +9,18 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLSyntaxErrorException;
 
 public class CassandraStatement extends CassandraBaseStatement {
+    private final ConsistencyLevel consistencyLevel;
 
-
-    CassandraStatement(Session session) {
+    CassandraStatement(Session session, ConsistencyLevel consistencyLevel) {
         super(session);
+        this.consistencyLevel = consistencyLevel;
     }
 
     @Override
     public ResultSet executeQuery(String sql) throws SQLException {
         checkClosed();
         try {
-            result = new CassandraResultSet(this, session.execute(sql));
+            result = new CassandraResultSet(this, execute(sql, consistencyLevel));
             return result;
         } catch (SyntaxError ex) {
             throw new SQLSyntaxErrorException(ex.getMessage(), ex);
@@ -30,11 +29,16 @@ public class CassandraStatement extends CassandraBaseStatement {
         }
     }
 
+    private com.datastax.driver.core.ResultSet execute(String sql, ConsistencyLevel consistencyLevel) {
+        Statement statement = new SimpleStatement(sql).setConsistencyLevel(consistencyLevel);
+        return session.execute(statement);
+    }
+
     @Override
     public int executeUpdate(String sql) throws SQLException {
         checkClosed();
         try {
-            result = new CassandraResultSet(this, session.execute(sql));
+            result = new CassandraResultSet(this, execute(sql, consistencyLevel));
             if (result.isQuery()) {
                 throw new SQLException("Not an update statement");
             }
@@ -50,7 +54,7 @@ public class CassandraStatement extends CassandraBaseStatement {
     public boolean execute(String sql) throws SQLException {
         checkClosed();
         try {
-            return executeInner(session.execute(sql), true);
+            return executeInner(execute(sql, consistencyLevel), true);
         } catch (Throwable t) {
             throw new SQLException(t.getMessage(), t);
         }
@@ -66,8 +70,11 @@ public class CassandraStatement extends CassandraBaseStatement {
     public void addBatch(String sql) {
         if (batchStatement == null) {
             batchStatement = new BatchStatement();
+            batchStatement.setConsistencyLevel(consistencyLevel);
         }
-        batchStatement.add(new SimpleStatement(sql));
+        SimpleStatement statement = new SimpleStatement(sql);
+        statement.setConsistencyLevel(consistencyLevel);
+        batchStatement.add(statement);
     }
 
     @Override
