@@ -67,10 +67,12 @@ public class CassandraPreparedStatement extends CassandraBaseStatement implement
     public int executeUpdate() throws SQLException {
         checkClosed();
         try {
-            result = new CassandraResultSet(this, session.execute(bindParameters()), returnNullStrings);
-            if (result.isQuery()) {
+            CassandraResultSet cassandraResultSet = new CassandraResultSet(this, session.execute(bindParameters()), returnNullStrings);
+            if (cassandraResultSet.isQuery()) {
+                this.result = null;
                 throw new SQLException("Not an update statement");
             }
+            this.result = cassandraResultSet;
             return 1;
         } catch (SyntaxError ex) {
             throw new SQLSyntaxErrorException(ex.getMessage(), ex);
@@ -85,7 +87,7 @@ public class CassandraPreparedStatement extends CassandraBaseStatement implement
     }
 
     @Override
-    public void close() {
+    public void close() throws SQLException {
         super.close();
         if (result != null) {
             result.close();

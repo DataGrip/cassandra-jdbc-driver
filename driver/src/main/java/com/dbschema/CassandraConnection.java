@@ -61,6 +61,14 @@ public class CassandraConnection implements Connection {
         }
     }
 
+    public ConsistencyLevel getConsistencyLevel() {
+        return consistencyLevel;
+    }
+
+    public void setConsistencyLevel(ConsistencyLevel consistencyLevel) {
+        this.consistencyLevel = consistencyLevel;
+    }
+
     @SuppressWarnings("WeakerAccess")
     public Session getSession() {
         return session;
@@ -82,7 +90,7 @@ public class CassandraConnection implements Connection {
     public Statement createStatement() throws SQLException {
         checkClosed();
         try {
-            return new CassandraStatement(session, consistencyLevel);
+            return new CassandraStatement(session, consistencyLevel, this);
         } catch (Throwable t) {
             throw new SQLException(t.getMessage(), t);
         }

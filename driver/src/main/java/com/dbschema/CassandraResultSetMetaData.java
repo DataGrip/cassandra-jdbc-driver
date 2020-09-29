@@ -214,14 +214,12 @@ public class CassandraResultSetMetaData implements ResultSetMetaData {
 
         int getJavaType() {
             String lower = toLowerCase(typeName);
-            if (javaTypeMap.containsKey(lower)) return javaTypeMap.get(lower);
-            throw new IllegalArgumentException("Type name is not known: " + lower);
+            return javaTypeMap.getOrDefault(lower, Types.OTHER);
         }
 
         String getClassName() {
             String lower = toLowerCase(typeName);
-            if (typeNameMap.containsKey(lower)) return typeNameMap.get(lower);
-            throw new IllegalArgumentException("Type name is not known: " + lower);
+            return typeNameMap.getOrDefault(lower, "unknown");
         }
 
         int getScale() {

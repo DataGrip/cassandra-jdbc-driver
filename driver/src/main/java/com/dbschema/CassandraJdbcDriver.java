@@ -121,7 +121,7 @@ public class CassandraJdbcDriver implements Driver {
     }
 
     String getVersion() {
-        return "1.3.5";
+        return "1.4";
     }
 
     @Override
@@ -131,7 +131,7 @@ public class CassandraJdbcDriver implements Driver {
 
     @Override
     public int getMinorVersion() {
-        return 3;
+        return 4;
     }
 
     @Override

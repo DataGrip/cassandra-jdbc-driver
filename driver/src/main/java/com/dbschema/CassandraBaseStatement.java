@@ -13,14 +13,14 @@ public abstract class CassandraBaseStatement implements Statement {
     final com.datastax.driver.core.Session session;
     BatchStatement batchStatement = null;
     private boolean isClosed = false;
-    CassandraResultSet result;
+    ResultSet result;
 
     CassandraBaseStatement(Session session) {
         this.session = session;
     }
 
     @Override
-    public void close() {
+    public void close() throws SQLException {
         isClosed = true;
     }
 
@@ -37,11 +37,12 @@ public abstract class CassandraBaseStatement implements Statement {
 
     boolean executeInner(com.datastax.driver.core.ResultSet resultSet, boolean returnNullStrings) throws SQLException {
         try {
-            result = new CassandraResultSet(this, resultSet, returnNullStrings);
-            if (!result.isQuery()) {
-                result = null;
+            CassandraResultSet cassandraResultSet = new CassandraResultSet(this, resultSet, returnNullStrings);
+            if (!cassandraResultSet.isQuery()) {
+                this.result = null;
                 return false;
             }
+            this.result = cassandraResultSet;
             return true;
         } catch (SyntaxError ex) {
             throw new SQLSyntaxErrorException(ex.getMessage(), ex);
