@@ -707,12 +707,24 @@ public class CassandraMetaData implements DatabaseMetaData {
 
     @Override
     public int getDatabaseMajorVersion() {
-        return Integer.parseInt((getDatabaseProductVersion().split("\\."))[0]);
+        String[] parts = getDatabaseProductVersion().split("\\.");
+        return Integer.parseInt(extractNumbers(parts[0]));
     }
 
     @Override
     public int getDatabaseMinorVersion() {
-        return Integer.parseInt((getDatabaseProductVersion().split("\\."))[1]);
+        String[] parts = getDatabaseProductVersion().split("\\.");
+        if (parts.length <= 1) return 0;
+        return Integer.parseInt(extractNumbers(parts[1]));
+    }
+
+    private String extractNumbers(String v) {
+        if (v.isEmpty()) return "";
+        int i = 0;
+        while (i < v.length() && v.charAt(i) >= '0' && v.charAt(i) <= '9') {
+            i++;
+        }
+        return v.substring(0, i);
     }
 
     @Override
